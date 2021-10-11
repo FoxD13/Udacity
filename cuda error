@@ -1,0 +1,35 @@
+#basically a minimal example thats very close to the solution of exercise 8 on building DNNs.
+
+model = models.densenet121(pretrained=True)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Freeze parameters
+for param in model.parameters():
+    param.requires_grad = False
+
+                             
+classifier = nn.Sequential(OrderedDict([
+                          ('fc1', nn.Linear(1024, 500)),
+                          ('relu', nn.ReLU()),
+                          ('fc2', nn.Linear(500, 2)),
+                          ('output', nn.LogSoftmax(dim=1))
+                          ]))
+  
+model.classifier = classifier
+
+criterion = nn.NLLLoss()
+optimizer = optim.Adam(model.classifier.parameters(), lr=0.001)
+
+model.to("cuda") # I also tried model.cuda, like in the video for exercise 8 on building DNNs
+
+#model.train() # makes no difference anyway
+
+epochs = 1
+for epoch in range(epochs):
+    for inputs, labels in dataloader_train:
+        inputs, labels = inputs.to("cuda"), labels.to("cuda")
+        logps = model.forward(inputs)
+        loss = criterion(logps, labels)
+        loss.backward()
+        optimizer.step()
+        print("confidence: ", torch.exp(logps))
